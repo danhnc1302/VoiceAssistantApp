@@ -1,14 +1,15 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen'
 import Feature from '../components/feature'
 import { dummyMessages } from '../constants'
-import GifImage from '@lowkey/react-native-gif';
+import Voice from '@wdragon/react-native-voice';
 
 const HomeScreen = () => {
   const [messages, setMessages] = useState(dummyMessages)
   const [recording, setRecording] = useState(false)
   const [speaking, setSpeaking] = useState(false)
+  const [result, setResult] = useState("")
 
   const clearMessages = () => {
     setMessages([])
@@ -17,6 +18,55 @@ const HomeScreen = () => {
   const stopSpeaking = () => {
     setSpeaking(false)
   }
+
+  const speechStartHandler = (e) => {
+    console.log("speechStartHandler")
+  }
+
+  const speechEndHandler = (e) => {
+    setRecording(false)
+    console.log("speechEndHandler")
+    
+  }
+
+  const speechResultsHandler = (e) => {
+    console.log("speechResultsHandler: ", e)
+    const text = e.value[0]
+    setResult(text)
+  }
+
+  const speechErrorHanlder = (e) => {
+    console.log("speechErrorHanlder: ",e)
+  }
+
+  const startRecording = async () => {
+    setRecording(true)
+    try {
+      await Voice.start('en-GB')
+    } catch (error) {
+      console.log("error: ", error)
+    }
+  }
+
+  const stopRecording = async () => {
+    try {
+      await Voice.stop('en-GB')
+      setRecording(false)
+    } catch (error) {
+      console.log("error: ", error)
+    }
+  }
+
+  useEffect(() => {
+    Voice.onSpeechStart = speechStartHandler
+    Voice.onSpeechEnd = speechEndHandler
+    Voice.onSpeechResults = speechResultsHandler
+    Voice.onSpeechError = speechErrorHanlder
+    
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners)
+    }
+  },[])
 
   return (
     <View className="flex-1 bg-white">
@@ -74,11 +124,11 @@ const HomeScreen = () => {
         <View className="flex justify-center items-center my-4">
           {
             recording ? (
-              <TouchableOpacity>
+              <TouchableOpacity onPress={stopRecording}>
                 <Image source={require("../../assets/images/voiceloading_new.gif")} style={{ width: hp(10), height: hp(10) }} className="rounded-full"/>
               </TouchableOpacity>
             ):(
-              <TouchableOpacity>
+              <TouchableOpacity onPress={startRecording}>
                 <Image source={require("../../assets/images/recordingicon.png")} style={{ width: hp(8), height: hp(8) }} className="rounded-full"/>
               </TouchableOpacity>
             )

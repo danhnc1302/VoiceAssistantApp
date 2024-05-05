@@ -1,4 +1,15 @@
 {
   "name": "VoiceAssistantApp",
-  "displayName": "VoiceAssistantApp"
+  "displayName": "VoiceAssistantApp",
+  "expo": {
+    "plugins": ["@wdragon/react-native-voice"]
+  },
+  "android": {
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/adaptive-icon.png",
+      "backgroundColor": "#FFFFFF"
+    },
+    "permissions": ["android.permission.RECORD_AUDIO"],
+    "package": "com.anonymous.SpeectToTextApp"
+  }
 }
