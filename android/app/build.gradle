@@ -73,8 +73,8 @@ android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
-
     namespace "com.voiceassistantapp"
+    ndkVersion "26.1.10909125"
     defaultConfig {
         applicationId "com.voiceassistantapp"
         minSdkVersion rootProject.ext.minSdkVersion
