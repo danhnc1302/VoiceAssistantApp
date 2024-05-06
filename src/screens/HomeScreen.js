@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react'
-import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { useState, useEffect, useRef } from 'react'
+import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen'
 import Feature from '../components/feature'
-import { dummyMessages } from '../constants'
 import Voice from '@wdragon/react-native-voice';
+import { apiCall } from '../api/openAI'
 
 const HomeScreen = () => {
-  const [messages, setMessages] = useState(dummyMessages)
+  const [messages, setMessages] = useState([])
   const [recording, setRecording] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [result, setResult] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  const ScrollViewRef = useRef()
 
   const clearMessages = () => {
     setMessages([])
@@ -26,7 +29,7 @@ const HomeScreen = () => {
   const speechEndHandler = (e) => {
     setRecording(false)
     console.log("speechEndHandler")
-    
+
   }
 
   const speechResultsHandler = (e) => {
@@ -36,7 +39,7 @@ const HomeScreen = () => {
   }
 
   const speechErrorHanlder = (e) => {
-    console.log("speechErrorHanlder: ",e)
+    console.log("speechErrorHanlder: ", e)
   }
 
   const startRecording = async () => {
@@ -52,9 +55,39 @@ const HomeScreen = () => {
     try {
       await Voice.stop('en-GB')
       setRecording(false)
+      fetchResponse()
     } catch (error) {
       console.log("error: ", error)
     }
+  }
+
+  const fetchResponse = () => {
+    if (result.trim().length > 0) {
+      let newMessages = [...messages]
+      newMessages.push({
+        role: "user",
+        content: result.trim()
+      })
+      setMessages([...newMessages])
+      updateScrollView()
+      setLoading(true)
+      apiCall(result.trim(), newMessages).then(res => {
+        setLoading(false)
+        if (res.success) {
+          setMessages([...res.data])
+          updateScrollView()
+          setResult("")
+        } else {
+          Alert.alert("Error", res.msg)
+        }
+      })
+    }
+  }
+
+  const updateScrollView = () => {
+    setTimeout(() => {
+      ScrollViewRef?.current?.scrollToEnd({ animated: true })
+    }, 200)
   }
 
   useEffect(() => {
@@ -62,11 +95,11 @@ const HomeScreen = () => {
     Voice.onSpeechEnd = speechEndHandler
     Voice.onSpeechResults = speechResultsHandler
     Voice.onSpeechError = speechErrorHanlder
-    
+
     return () => {
       Voice.destroy().then(Voice.removeAllListeners)
     }
-  },[])
+  }, [])
 
   return (
     <View className="flex-1 bg-white">
@@ -81,6 +114,7 @@ const HomeScreen = () => {
               <Text style={{ fontSize: wp(5) }} className="text-gray-700 font-semibold ml-1">Assistant</Text>
               <View className="bg-neutral-200 rounded-3xl p-4">
                 <ScrollView
+                  ref={ScrollViewRef}
                   bounces={false}
                   className="space-y-4"
                   showsVerticalScrollIndicator={false}
@@ -92,13 +126,13 @@ const HomeScreen = () => {
                           return (
                             <View key={index} className="flex-row justify-start">
                               <View className="p-2 flex rounded-2xl bg-emerald-100 rounded-tl-none">
-                                <Image key={index} source={{ uri: message.content }} style={{ width: wp(60), height: wp(60) }} className="rounded-2xl"/>
+                                <Image key={index} source={{ uri: message.content }} style={{ width: wp(60), height: wp(60) }} className="rounded-2xl" />
                               </View>
                             </View>
                           )
                         } else {
                           return (
-                            <View style={{ width: wp(70) }} className="bg-emerald-100 rounded-xl  p-2 rounded-tl-none">
+                            <View key={index} style={{ width: wp(70) }} className="bg-emerald-100 rounded-xl  p-2 rounded-tl-none">
                               <Text>{message.content}</Text>
                             </View>
                           )
@@ -125,11 +159,11 @@ const HomeScreen = () => {
           {
             recording ? (
               <TouchableOpacity onPress={stopRecording}>
-                <Image source={require("../../assets/images/voiceloading_new.gif")} style={{ width: hp(10), height: hp(10) }} className="rounded-full"/>
+                <Image source={require("../../assets/images/voiceloading_new.gif")} style={{ width: hp(10), height: hp(10) }} className="rounded-full" />
               </TouchableOpacity>
-            ):(
+            ) : (
               <TouchableOpacity onPress={startRecording}>
-                <Image source={require("../../assets/images/recordingicon.png")} style={{ width: hp(8), height: hp(8) }} className="rounded-full"/>
+                <Image source={require("../../assets/images/recordingicon.png")} style={{ width: hp(8), height: hp(8) }} className="rounded-full" />
               </TouchableOpacity>
             )
           }
