@@ -157,16 +157,19 @@ const HomeScreen = () => {
         }
         <View className="flex justify-center items-center my-4">
           {
-            recording ? (
-              <TouchableOpacity onPress={stopRecording}>
-                <Image source={require("../../assets/images/voiceloading_new.gif")} style={{ width: hp(10), height: hp(10) }} className="rounded-full" />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity onPress={startRecording}>
-                <Image source={require("../../assets/images/recordingicon.png")} style={{ width: hp(8), height: hp(8) }} className="rounded-full" />
-              </TouchableOpacity>
-            )
-          }
+            loading ? (
+              <Image source={require("../../assets/images/loading.gif")} style={{ width: hp(10), height: hp(10) }}/>
+            ):
+              recording ? (
+                <TouchableOpacity onPress={stopRecording}>
+                  <Image source={require("../../assets/images/voiceloading_new.gif")} style={{ width: hp(10), height: hp(10) }} className="rounded-full" />
+                </TouchableOpacity>
+                ) : (
+                <TouchableOpacity onPress={startRecording}>
+                  <Image source={require("../../assets/images/recordingicon.png")} style={{ width: hp(8), height: hp(8) }} className="rounded-full" />
+                </TouchableOpacity>
+                )
+        }
           {
             messages.length > 0 && (
               <TouchableOpacity onPress={clearMessages} className="bg-neutral-400 rounded-3xl p-2 absolute right-10">
