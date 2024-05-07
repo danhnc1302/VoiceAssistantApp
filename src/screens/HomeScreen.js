@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native'
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen'
 import Feature from '../components/feature'
 import Voice from '@wdragon/react-native-voice';
 import { apiCall } from '../api/openAI'
+import Tts from 'react-native-tts';
 
 const HomeScreen = () => {
   const [messages, setMessages] = useState([])
@@ -15,10 +16,12 @@ const HomeScreen = () => {
   const ScrollViewRef = useRef()
 
   const clearMessages = () => {
+    Tts.stop()
     setMessages([])
   }
 
   const stopSpeaking = () => {
+    Tts.stop()
     setSpeaking(false)
   }
 
@@ -44,6 +47,7 @@ const HomeScreen = () => {
 
   const startRecording = async () => {
     setRecording(true)
+    Tts.stop()
     try {
       await Voice.start('en-GB')
     } catch (error) {
@@ -53,7 +57,7 @@ const HomeScreen = () => {
 
   const stopRecording = async () => {
     try {
-      await Voice.stop('en-GB')
+      await Voice.stop()
       setRecording(false)
       fetchResponse()
     } catch (error) {
@@ -63,6 +67,7 @@ const HomeScreen = () => {
 
   const fetchResponse = () => {
     if (result.trim().length > 0) {
+
       let newMessages = [...messages]
       newMessages.push({
         role: "user",
@@ -77,10 +82,31 @@ const HomeScreen = () => {
           setMessages([...res.data])
           updateScrollView()
           setResult("")
+          startTextToSpeech(res.data[res.data.length - 1])
         } else {
           Alert.alert("Error", res.msg)
         }
       })
+    }
+  }
+
+  const startTextToSpeech = () => {
+    if (!messages.content.includes("https")) {
+      setSpeaking(true)
+      if (Platform.OS === "ios") {
+        Tts.speak('Hello, world!', {
+          iosVoiceId: 'com.apple.ttsbundle.Moira-compact',
+          rate: 0.5,
+        })
+      } else {
+        Tts.speak(messages.content, {
+          androidParams: {
+            KEY_PARAM_PAN: -1,
+            KEY_PARAM_VOLUME: 0.5,
+            KEY_PARAM_STREAM: 'STREAM_MUSIC',
+          },
+        })
+      }
     }
   }
 
@@ -95,6 +121,14 @@ const HomeScreen = () => {
     Voice.onSpeechEnd = speechEndHandler
     Voice.onSpeechResults = speechResultsHandler
     Voice.onSpeechError = speechErrorHanlder
+
+    Tts.addEventListener('tts-start', (event) => console.log("start", event));
+    Tts.addEventListener('tts-progress', (event) => console.log("progress", event));
+    Tts.addEventListener('tts-finish', (event) => {
+      console.log("finish", event)
+      setSpeaking(false)
+    })
+    Tts.addEventListener('tts-cancel', (event) => console.log("cancel", event));
 
     return () => {
       Voice.destroy().then(Voice.removeAllListeners)
@@ -158,18 +192,18 @@ const HomeScreen = () => {
         <View className="flex justify-center items-center my-4">
           {
             loading ? (
-              <Image source={require("../../assets/images/loading.gif")} style={{ width: hp(10), height: hp(10) }}/>
-            ):
+              <Image source={require("../../assets/images/loading.gif")} style={{ width: hp(10), height: hp(10) }} />
+            ) :
               recording ? (
                 <TouchableOpacity onPress={stopRecording}>
                   <Image source={require("../../assets/images/voiceloading_new.gif")} style={{ width: hp(10), height: hp(10) }} className="rounded-full" />
                 </TouchableOpacity>
-                ) : (
+              ) : (
                 <TouchableOpacity onPress={startRecording}>
                   <Image source={require("../../assets/images/recordingicon.png")} style={{ width: hp(8), height: hp(8) }} className="rounded-full" />
                 </TouchableOpacity>
-                )
-        }
+              )
+          }
           {
             messages.length > 0 && (
               <TouchableOpacity onPress={clearMessages} className="bg-neutral-400 rounded-3xl p-2 absolute right-10">
